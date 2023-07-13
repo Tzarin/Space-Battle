@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Space Battle Game</title>
+  <style>
+    body {
+      font-family: monospace;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin-top: 50px;
+    }
+    .ship-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin-bottom: 50px;
+    }
+    .ship-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .ship-info p {
+      margin: 0;
+      margin-right: 10px;
+    }
+    .btn-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+    #attack-btn, #retreat-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    #result-message {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Space Battle Game</h1>
+  <div class="container">
+    <div class="ship-container">
+      <h2>Your Spaceship: USS Enterprise</h2>
+      <div class="ship-info">
+        <p id="spaceship-hull">Hull: 20</p>
+      </div>
+    </div>
+    <div class="ship-container">
+      <h2>Alien Ship</h2>
+      <div class="ship-info">
+        <p id="alien-hull">Hull: </p>
+      </div>
+      <div class="btn-container">
+        <button id="attack-btn">Attack</button>
+        <button id="retreat-btn">Retreat</button>
+      </div>
+    </div>
+    <p id="result-message"></p>
+  </div>
+  
+  <script>
+    // Spaceship class
+    class Spaceship {
+      constructor(name, hull, firepower, accuracy) {
+        this.name = name;
+        this.hull = hull;
+        this.firepower = firepower;
+        this.accuracy = accuracy;
+      }
+
+      attack(targetShip) {
+        console.log(`${this.name} attacks ${targetShip.name}!`);
+        if (Math.random() < this.accuracy) {
+          console.log(`Hit! ${targetShip.name} loses ${this.firepower} hull points.`);
+          targetShip.hull -= this.firepower;
+        } else {
+          console.log(`${this.name} missed the target.`);
+        }
+      }
+    }
+
+    // AlienShip class
+    class AlienShip {
+      constructor(hull, firepower, accuracy) {
+        this.hull = hull;
+        this.firepower = firepower;
+        this.accuracy = accuracy;
+      }
+
+      attack(targetShip) {
+        console.log(`Alien ship attacks ${targetShip.name}!`);
+        if (Math.random() < this.accuracy) {
+          console.log(`Hit! ${targetShip.name} loses ${this.firepower} hull points.`);
+          targetShip.hull -= this.firepower;
+        } else {
+          console.log(`Alien ship missed ${targetShip.name}.`);
+        }
+      }
+    }
+
+    // Game class
+    class Game {
+      constructor() {
+        this.spaceship = new Spaceship("USS Enterprise", 20, 5, 0.7);
+        this.aliens = [];
+        this.aliensDestroyed = 0;
+        this.isGameOver = false;
+      }
+
+      createAliens(numAliens) {
+        for (let i = 0; i < numAliens; i++) {
+          const hull = Math.floor(Math.random() * 4) + 3; // Random hull points between 3 and 6
+          const firepower = Math.floor(Math.random() * 3) + 2; // Random firepower between 2 and 4
+          const accuracy = (Math.floor(Math.random() * 3) + 6) / 10; // Random accuracy between 0.6 and 0.8
+          const alienShip = new AlienShip(hull, firepower, accuracy);
+          this.aliens.push(alienShip);
+        }
+      }
+
+      startGame() {
+        console.log("Welcome to Space Battle Game!");
+        console.log(`You are piloting the ${this.spaceship.name}.`);
+        this.createAliens(6); // Create 6 alien ships
+        this.updateSpaceshipHull();
+        this.updateAlienHull();
+        this.playTurn();
+      }
+
+      playTurn() {
+        if (this.aliensDestroyed === this.aliens.length) {
+          this.endGame(true); // All aliens destroyed, player wins
+          return;
+        }
+
+        console.log("--------------------");
+        console.log("Player's Turn:");
+        console.log(`Player hull: ${this.spaceship.hull}`);
+
+        const attackBtn = document.getElementById("attack-btn");
+        attackBtn.disabled = false;
+        attackBtn.addEventListener("click", () => {
+          this.attackAlien();
+        });
+
+        const retreatBtn = document.getElementById("retreat-btn");
+        retreatBtn.disabled = false;
+        retreatBtn.addEventListener("click", () => {
+          this.endGame(false); // Player retreats, player loses
+        });
+      }
+
+      attackAlien() {
+        const alienShip = this.aliens[this.aliensDestroyed];
+        this.spaceship.attack(alienShip);
+        this.updateAlienHull();
+
+        if (alienShip.hull > 0) {
+          alienShip.attack(this.spaceship);
+          this.updateSpaceshipHull();
+
+          if (this.spaceship.hull <= 0) {
+            this.endGame(false); // Player's spaceship destroyed, player loses
+            return;
+          }
+        } else {
+          console.log(`You destroyed alien ship ${this.aliensDestroyed + 1}!`);
+          this.aliensDestroyed++;
+        }
+
+        if (!this.isGameOver) {
+          this.playTurn();
+        }
+      }
+
+      updateSpaceshipHull() {
+        const spaceshipHull = document.getElementById("spaceship-hull");
+        spaceshipHull.textContent = `Hull: ${this.spaceship.hull}`;
+      }
+
+      updateAlienHull() {
+        const alienHull = document.getElementById("alien-hull");
+        const alienShip = this.aliens[this.aliensDestroyed];
+        alienHull.textContent = `Hull: ${alienShip.hull}`;
+      }
+
+      endGame(playerWins) {
+        this.isGameOver = true;
+
+        const attackBtn = document.getElementById("attack-btn");
+        attackBtn.disabled = true;
+        attackBtn.removeEventListener("click", () => {
+          this.attackAlien();
+        });
+
+        const retreatBtn = document.getElementById("retreat-btn");
+        retreatBtn.disabled = true;
+        retreatBtn.removeEventListener("click", () => {
+          this.endGame(false); // Player retreats, player loses
+        });
+
+        const resultMessage = document.getElementById("result-message");
+        if (playerWins) {
+          resultMessage.textContent = "Congratulations! You destroyed all the alien ships. You win!";
+          resultMessage.style.color = "green";
+        } else {
+          resultMessage.textContent = "Game Over! Your spaceship was destroyed or you retreated. You lose!";
+          resultMessage.style.color = "red";
+        }
+      }
+    }
+
+    // Create and start the game
+    const game = new Game();
+    game.startGame();
+  </script>
+</body>
+</html>
+
+
